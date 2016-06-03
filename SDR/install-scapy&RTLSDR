@@ -1,0 +1,73 @@
+install scapy:
+http://www.secdev.org/projects/scapy/doc/installation.html
+*scapy needed for LiveMon
+
+
+install rtl-sdr:
+http://sdr.osmocom.org/trac/wiki/rtl-sdr
+
+git clone git://git.osmocom.org/rtl-sdr.git
+cd rtl-sdr/
+mkdir build
+cd build
+cmake ../
+make
+sudo make install
+sudo ldconfig
+
+solve blaclist:
+https://groups.google.com/forum/#!msg/ultra-cheap-sdr/6_sSON94Azo/sOkhU81YINIJ
+
+			> (I don't know anything about blacklisting or detaching!) 
+
+			The problem is the Linux kernel DVB driver is loaded, which means it is 
+			making the device available for TV reception.  Since the device is in 
+			use by this driver, the SDR programs can't access it. 
+
+			> *Kernel driver is active, or device is claimed by second instance of 
+			> librtlsdr. 
+			> In the first case, please either detach or blacklist the kernel module 
+			> (dvb_usb_rtl28xxu), or enable automatic detaching at compile time. 
+			> * 
+
+			As the message suggests, there are two solutions.  The quickest is to 
+			simply unload the driver: 
+
+			  sudo rmmod dvb_usb_rtl28xxu rtl2832 
+
+			Not sure whether "rtl2832" on the end there is required or not, but it 
+			can't hurt.  This is only a temporary solution, as the driver will be 
+			loaded again the next time you unplug and replug the USB device, so 
+			you'll have to run the command again. 
+
+			If this works, and you don't want to use the device for TV reception, 
+			you can stop the module from ever being loaded, solving the problem 
+			permanently.  The exact method depends on your Linux distribution, but 
+			for me (running Arch Linux) I create a file in /etc/modprobe.d with 
+			a .conf extension (I called it "no-rtl.conf") with these contents: 
+
+			  blacklist dvb_usb_rtl28xxu 
+			  blacklist rtl2832 
+			  blacklist rtl2830 
+
+			Again not sure whether it's necessary to blacklist all three of these 
+			or just the first, but I was erring on the side of caution and chose to 
+			list everything to do with the Realtek DVB device. 
+
+			Once you have created this blacklist file, you may need to unload the 
+			driver one last time if it was already running - the blacklist 
+			prevents it from loading but doesn't do anything if it's already 
+			running. 
+
+			The second solution is to recompile the rtl_test program, and include 
+			support for asking the kernel driver to let go of the device, so it can 
+			be accessed.  This may not be ideal though, because you will still have 
+			the problem of the device being in use if you use other programs that do 
+			not support detaching of the kernel driver. 
+
+			If you're only interested in SDR use, blacklisting is the way to go. 
+			And you can always remove the blacklist if you do want to use it for 
+			TV one day. 
+
+			Cheers, 
+			Adam. 
