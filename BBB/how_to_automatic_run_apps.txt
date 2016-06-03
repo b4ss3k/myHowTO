@@ -1,0 +1,112 @@
+
+root@beaglebone:/etc# nano /etc/systemd/system/getty.target.wants/getty\@tty1.service
+root@beaglebone:/etc# nano /etc/profile
+
+
+-------HOW TO AUTO RUN APP BEAGLEBONE ------------
+
+{{{1 MAKE BASH SCRIPT}}}
+
+File: /home/root/ViewRF/yourservice.sh
+
+            #!/bin/bash
+            echo "run apps brooo.. :D"
+            a="-qws"
+            /home/root/ViewRF/ViewRF "$a" &
+
+            {{{2}}} bypass login (autologin)
+
+
+
+
+{{{2 AUTOLOGIN}}}
+
+root@beaglebone:/etc# nano /etc/systemd/system/getty.target.wants/getty\@tty1.service
+
+              GNU nano 2.2.5                           File: /etc/systemd/system/getty.target.wants/getty@tty1.service
+
+              #  This file is part of systemd.
+              #
+              #  systemd is free software; you can redistribute it and/or modify it
+              #  under the terms of the GNU Lesser General Public License as published by
+              #  the Free Software Foundation; either version 2.1 of the License, or
+              #  (at your option) any later version.
+
+              [Unit]
+              Description=Getty on %I
+              Documentation=man:agetty(8) man:systemd-getty-generator(8)
+              Documentation=http://0pointer.de/blog/projects/serial-console.html
+              After=systemd-user-sessions.service plymouth-quit-wait.service
+
+              # If additional gettys are spawned during boot then we should make
+              # sure that this is synchronized before getty.target, even though
+              # getty.target didn't actually pull it in.
+              Before=getty.target
+              IgnoreOnIsolate=yes
+
+              # On systems without virtual consoles, don't start any getty. (Note
+              # that serial gettys are covered by serial-getty@.service, not this
+              # unit
+              ConditionPathExists=/dev/tty0
+
+              [Service]
+              # the VT is cleared by TTYVTDisallocate
+              # default ExecStart=-/sbin/agetty --noclear %I 38400 linux
+              ExecStart=-/sbin/agetty -a root 115200 %I #bypass login part
+              Type=idle
+              Restart=always
+              RestartSec=0
+              UtmpIdentifier=%I
+              TTYPath=/dev/%I
+              TTYReset=yes
+              TTYVHangup=yes
+              TTYVTDisallocate=yes
+              KillMode=process
+              IgnoreSIGPIPE=no
+
+
+
+{{{3}}} run script
+
+            File: /etc/profile
+
+            # /etc/profile: system-wide .profile file for the Bourne shell (sh(1))
+            # and Bourne compatible shells (bash(1), ksh(1), ash(1), ...).
+
+            PATH="/usr/local/bin:/usr/bin:/bin"
+            EDITOR="/bin/vi"                        # needed for packages like cron
+            test -z "$TERM" && TERM="vt100" # Basic terminal capab. For screen etc.
+
+            if [ ! -e /etc/localtime ]; then
+                    TZ="UTC"                # Time Zone. Look at http://theory.uwinnipeg.ca/gnu/glibc/libc_303.html
+                                            # for an explanation of how to set this to your local timezone.
+                    export TZ
+            fi
+
+            if [ "$HOME" = "/home/root" ]; then
+               PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
+            fi
+            if [ "$PS1" ]; then
+            # works for bash and ash (no other shells known to be in use here)
+               PS1='\u@\h:\w\$ '
+            fi
+
+            if [ -d /etc/profile.d ]; then
+              for i in /etc/profile.d/* ; do
+                . $i
+              done
+              unset i
+            fi
+
+            export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
+
+            umask 022
+
+            export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/qwt-6.1.0/lib
+
+            ##this is ittttttt ###
+            bash /home/root/ViewRF/yourapphere.sh 
+
+
+{{{{4}}}}
+REBOOTTTT
